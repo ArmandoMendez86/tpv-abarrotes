@@ -1,0 +1,571 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Guía de uso — PVT (POS)</title>
+    <style>
+      :root {
+        --bg0: #0b1220;
+        --bg1: #f8fafc;
+        --card: #ffffff;
+        --text: #0f172a;
+        --muted: #475569;
+        --border: #e2e8f0;
+        --primary: #1d4ed8;
+        --primary2: #3b82f6;
+        --success: #047857;
+        --warning: #b45309;
+        --danger: #b91c1c;
+        --shadow: 0 14px 40px rgba(2, 6, 23, 0.10);
+        --radius: 18px;
+        --radius2: 22px;
+      }
+
+      * { box-sizing: border-box; }
+      html, body { height: 100%; }
+      body {
+        margin: 0;
+        font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica,
+          Arial, "Apple Color Emoji", "Segoe UI Emoji";
+        color: var(--text);
+        line-height: 1.55;
+        background:
+          radial-gradient(1200px 600px at 20% -10%, rgba(59,130,246,0.20), transparent 60%),
+          radial-gradient(900px 500px at 90% 0%, rgba(4,120,87,0.14), transparent 55%),
+          linear-gradient(180deg, #eef2ff 0%, var(--bg1) 30%, var(--bg1) 100%);
+      }
+      a { color: var(--primary); text-decoration: none; }
+      a:hover { text-decoration: underline; }
+
+      .wrap { max-width: 1100px; margin: 0 auto; padding: 26px 18px 64px; }
+      .printOnly { display: none; }
+      .noPrint { display: block; }
+
+      /* --- Hero / portada -------------------------------------------------- */
+      .hero {
+        border-radius: var(--radius2);
+        background: linear-gradient(135deg, rgba(11,18,32,0.98), rgba(11,18,32,0.86));
+        border: 1px solid rgba(255,255,255,0.10);
+        box-shadow: var(--shadow);
+        padding: 22px;
+        color: #fff;
+        overflow: hidden;
+        position: relative;
+        margin-bottom: 14px;
+      }
+      .hero::after {
+        content: "";
+        position: absolute;
+        inset: -60px -120px auto auto;
+        width: 520px;
+        height: 520px;
+        background: radial-gradient(circle at 30% 30%, rgba(59,130,246,0.55), transparent 60%);
+        filter: blur(0px);
+        opacity: 0.55;
+        transform: rotate(10deg);
+      }
+      .heroGrid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 14px;
+        position: relative;
+        z-index: 1;
+      }
+      @media (min-width: 920px) {
+        .heroGrid { grid-template-columns: 1.4fr 0.9fr; align-items: start; }
+      }
+      .heroTitle { margin: 0; font-size: 30px; font-weight: 950; letter-spacing: 0.01em; }
+      .heroSubtitle { margin: 8px 0 0; color: rgba(255,255,255,0.85); }
+      .heroBadges { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px;
+        border-radius: 999px;
+        font-size: 13px;
+        font-weight: 800;
+        border: 1px solid rgba(255,255,255,0.18);
+        background: rgba(255,255,255,0.08);
+        color: rgba(255,255,255,0.92);
+      }
+      .badge strong { color: #fff; }
+      .heroCard {
+        background: rgba(255,255,255,0.08);
+        border: 1px solid rgba(255,255,255,0.16);
+        border-radius: 16px;
+        padding: 14px;
+        display: grid;
+        gap: 10px;
+      }
+      .heroCard h2 {
+        margin: 0;
+        font-size: 13px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: rgba(255,255,255,0.75);
+      }
+      .heroList { margin: 0; padding-left: 18px; color: rgba(255,255,255,0.9); }
+      .heroList li { margin: 6px 0; }
+
+      /* --- Layout principal (índice + contenido) --------------------------- */
+      .layout {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 14px;
+      }
+      @media (min-width: 980px) {
+        .layout { grid-template-columns: 300px 1fr; align-items: start; }
+      }
+      .toc {
+        background: rgba(255,255,255,0.78);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        padding: 14px;
+        position: sticky;
+        top: 14px;
+        backdrop-filter: blur(10px);
+      }
+      .toc h2 {
+        margin: 0 0 10px;
+        font-size: 13px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--muted);
+      }
+      .toc a {
+        display: block;
+        padding: 10px 10px;
+        border-radius: 12px;
+        border: 1px solid transparent;
+        color: var(--text);
+        font-weight: 800;
+        margin: 6px 0;
+        background: rgba(241,245,249,0.65);
+      }
+      .toc a:hover { border-color: #c7d2fe; background: #eef2ff; }
+      .toc small { display: block; color: var(--muted); font-weight: 600; margin-top: 2px; }
+
+      /* --- Cards/Secciones ------------------------------------------------- */
+      .card {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        padding: 18px;
+      }
+      .sectionTitle {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin: 0 0 10px;
+      }
+      .sectionTitle h2 {
+        margin: 0;
+        font-size: 16px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--muted);
+      }
+      .icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 14px;
+        display: grid;
+        place-items: center;
+        background: #eef2ff;
+        border: 1px solid #dbeafe;
+        color: var(--primary);
+      }
+      .card h3 { margin: 14px 0 8px; font-size: 16px; }
+      .card p { margin: 10px 0; }
+      .card ul { margin: 8px 0 0; padding-left: 18px; }
+      .card li { margin: 6px 0; }
+
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 10px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 900;
+        border: 1px solid var(--border);
+        color: var(--muted);
+        background: #f1f5f9;
+        margin-right: 6px;
+        white-space: nowrap;
+      }
+      .pill.primary { color: #0b2d8a; background: #e8efff; border-color: #c9d9ff; }
+      .pill.success { color: #065f46; background: #ecfdf5; border-color: #a7f3d0; }
+      .pill.warning { color: #92400e; background: #fffbeb; border-color: #fcd34d; }
+      .pill.danger { color: #991b1b; background: #fef2f2; border-color: #fecaca; }
+
+      .grid2 {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 14px;
+      }
+      @media (min-width: 860px) {
+        .grid2 { grid-template-columns: 1fr 1fr; }
+      }
+
+      /* --- Steps ---------------------------------------------------------- */
+      .steps {
+        counter-reset: step;
+        display: grid;
+        gap: 10px;
+        margin-top: 12px;
+      }
+      .step {
+        display: grid;
+        grid-template-columns: 42px 1fr;
+        gap: 12px;
+        padding: 12px;
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        background: linear-gradient(180deg, #fff, #fbfdff);
+      }
+      .step::before {
+        counter-increment: step;
+        content: counter(step);
+        width: 42px;
+        height: 42px;
+        border-radius: 14px;
+        display: grid;
+        place-items: center;
+        font-weight: 950;
+        color: #0b2d8a;
+        background: #e8efff;
+        border: 1px solid #c9d9ff;
+      }
+      .step b { display: block; margin-bottom: 2px; }
+      .muted { color: var(--muted); }
+
+      .callout {
+        border-radius: 16px;
+        padding: 12px 14px;
+        border: 1px solid var(--border);
+        background: #f1f5f9;
+        margin-top: 12px;
+      }
+      .callout strong { font-weight: 950; }
+
+      .shot {
+        margin-top: 12px;
+        border-radius: 16px;
+        border: 1px dashed var(--border);
+        background:
+          linear-gradient(180deg, rgba(241,245,249,0.8), rgba(255,255,255,0.95));
+        padding: 14px;
+        color: var(--muted);
+        font-weight: 700;
+      }
+
+      .footer {
+        margin-top: 18px;
+        color: var(--muted);
+        font-size: 12px;
+        text-align: center;
+      }
+      .kbd {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+          "Courier New", monospace;
+        font-size: 12px;
+        padding: 2px 8px;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        background: #fff;
+      }
+
+      /* --- Print (para PDF) ---------------------------------------------- */
+      @media print {
+        @page { size: A4; margin: 14mm; }
+
+        body { background: #fff !important; }
+        .wrap { max-width: none; padding: 0; }
+
+        .noPrint { display: none !important; }
+        .printOnly { display: block !important; }
+
+        /* En PDF no queremos sticky ni blur */
+        .toc {
+          position: static;
+          backdrop-filter: none;
+          background: #fff;
+          box-shadow: none;
+        }
+        .hero { box-shadow: none; }
+        .card { box-shadow: none; }
+
+        /* Mejora separación por páginas */
+        .hero { break-after: page; page-break-after: always; }
+        .card { break-inside: avoid; page-break-inside: avoid; }
+        section.card { scroll-margin-top: 0; }
+
+        a { color: #000; text-decoration: none; }
+        .badge { border-color: rgba(255,255,255,0.25); }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <section class="hero">
+        <div class="heroGrid">
+          <div>
+            <h1 class="heroTitle">Guía de uso — PVT (Punto de Venta)</h1>
+            <p class="heroSubtitle">
+              Operación rápida para tienda · Funciona <b>sin internet</b> · Datos guardados localmente (SQLite).
+            </p>
+            <div class="heroBadges">
+              <span class="badge">🧾 <strong>Tickets</strong> y ventas</span>
+              <span class="badge">🏷️ <strong>Catálogo</strong> y precios</span>
+              <span class="badge">📦 <strong>Inventario</strong> mínimo</span>
+              <span class="badge">👥 <strong>Cajeros</strong> y accesos</span>
+              <span class="badge">📶 <strong>Offline</strong> 100%</span>
+            </div>
+          </div>
+          <aside class="heroCard">
+            <h2>Información</h2>
+            <div>
+              <span class="pill primary">Versión</span> <span class="kbd">1.0</span>
+            </div>
+            <div>
+              <span class="pill">Plataforma</span> Android
+            </div>
+            <div>
+              <span class="pill">Roles</span> Administrador / Vendedor
+            </div>
+            <ul class="heroList">
+              <li><b>Recomendación:</b> usar PIN de 4 dígitos para cajeros.</li>
+              <li><b>Actualizaciones:</b> instalar “encima” para no perder datos.</li>
+            </ul>
+          </aside>
+        </div>
+      </section>
+
+      <div class="layout">
+        <nav class="toc noPrint" aria-label="Índice">
+          <h2>Índice</h2>
+          <a href="#login">Inicio de sesión <small>Entrar por rol</small></a>
+          <a href="#vendedor">Vendedor (Caja) <small>Cobrar rápido</small></a>
+          <a href="#admin">Administrador <small>Panel y caja</small></a>
+          <a href="#catalogo">Catálogo <small>Crear / editar productos</small></a>
+          <a href="#reportes">Reportes <small>Ventas y tendencias</small></a>
+          <a href="#cajeros">Cajeros <small>Alta, baja y PIN</small></a>
+          <a href="#faq">Preguntas frecuentes <small>Respuestas rápidas</small></a>
+        </nav>
+
+        <main class="grid2">
+        <section class="card printOnly">
+          <div class="sectionTitle">
+            <div class="icon">📄</div>
+            <h2>Índice</h2>
+          </div>
+          <ul>
+            <li><b>Inicio de sesión</b></li>
+            <li><b>Vendedor (Caja)</b></li>
+            <li><b>Administrador — Panel</b></li>
+            <li><b>Catálogo — Crear / Editar producto</b></li>
+            <li><b>Reportes</b></li>
+            <li><b>Administración de cajeros</b></li>
+            <li><b>Preguntas frecuentes</b></li>
+          </ul>
+        </section>
+        <section class="card" id="login">
+          <div class="sectionTitle">
+            <div class="icon">🔐</div>
+            <h2>Inicio de sesión</h2>
+          </div>
+          <p>
+            La app maneja dos roles:
+            <span class="pill primary">Administrador</span>
+            <span class="pill">Vendedor</span>
+          </p>
+          <div class="steps">
+            <div class="step">
+              <div>
+                <b>Captura usuario</b>
+                <span class="muted">Ej. <span class="kbd">admin</span> o <span class="kbd">cajero</span></span>
+              </div>
+            </div>
+            <div class="step">
+              <div>
+                <b>Captura contraseña / PIN</b>
+                <span class="muted"
+                  >En algunos cajeros se usa PIN de 4 dígitos para entrar más rápido.</span
+                >
+              </div>
+            </div>
+            <div class="step">
+              <div>
+                <b>Entrar</b>
+                <span class="muted">La app te mandará al módulo correspondiente según el rol.</span>
+              </div>
+            </div>
+          </div>
+          <div class="callout">
+            <strong>Nota (offline):</strong> Si el dispositivo no tiene internet, la app sigue funcionando.
+          </div>
+        </section>
+
+        <section class="card" id="vendedor">
+          <div class="sectionTitle">
+            <div class="icon">🧾</div>
+            <h2>Vendedor (Caja)</h2>
+          </div>
+          <p>Flujo recomendado para cobrar rápido y sin errores.</p>
+          <div class="steps">
+            <div class="step">
+              <div>
+                <b>Buscar producto</b>
+                <span class="muted">Por nombre, categoría o código de barras (si existe).</span>
+              </div>
+            </div>
+            <div class="step">
+              <div>
+                <b>Agregar al carrito</b>
+                <span class="muted">Ajusta cantidades desde el carrito si es necesario.</span>
+              </div>
+            </div>
+            <div class="step">
+              <div>
+                <b>Cobrar</b>
+                <span class="muted">Usa el botón principal (verde) para finalizar el ticket.</span>
+              </div>
+            </div>
+          </div>
+          <div class="callout">
+            <span class="pill success">Consejo</span>
+            Si el cliente paga en efectivo, captura el monto recibido para calcular el cambio.
+          </div>
+        </section>
+
+        <section class="card" id="admin">
+          <div class="sectionTitle">
+            <div class="icon">🧭</div>
+            <h2>Administrador — Panel</h2>
+          </div>
+          <p>
+            El panel muestra accesos directos con iconos: productos, ventas del día, inventario,
+            reportes, cajeros, ticket e impresora y control de caja.
+          </p>
+          <h3>Control de caja</h3>
+          <ul>
+            <li><b>Abrir caja</b>: iniciar turno con fondo.</li>
+            <li><b>Movimientos</b>: registrar entradas/salidas de efectivo.</li>
+            <li><b>Cerrar caja</b>: arqueo y cierre del turno.</li>
+          </ul>
+          <div class="callout">
+            <span class="pill warning">Importante</span>
+            Evita cerrar la app durante el cierre de caja.
+          </div>
+        </section>
+
+        <section class="card" id="catalogo">
+          <div class="sectionTitle">
+            <div class="icon">🏷️</div>
+            <h2>Catálogo — Crear / Editar producto</h2>
+          </div>
+          <p>Campos principales:</p>
+          <ul>
+            <li><b>Nombre</b>: se recomienda en MAYÚSCULAS para búsquedas rápidas.</li>
+            <li><b>Código de barras</b>: opcional; sirve para identificar rápido el producto.</li>
+            <li><b>Categoría</b>: útil para filtros y reportes.</li>
+            <li><b>Costo / Precio</b>: para margen estimado.</li>
+            <li><b>Stock / Stock mínimo</b>: alertas de inventario.</li>
+          </ul>
+          <h3>Escanear código de barras</h3>
+          <div class="steps">
+            <div class="step">
+              <div>
+                <b>Toca “Escanear con cámara”</b>
+                <span class="muted">Se abrirá el lector de códigos.</span>
+              </div>
+            </div>
+            <div class="step">
+              <div>
+                <b>Apunta al código</b>
+                <span class="muted">Mantén el teléfono firme y con buena iluminación.</span>
+              </div>
+            </div>
+            <div class="step">
+              <div>
+                <b>Listo</b>
+                <span class="muted">El número se pegará automáticamente en el campo “Código de barras”.</span>
+              </div>
+            </div>
+          </div>
+          <div class="callout">
+            <span class="pill danger">Si no escanea</span>
+            Limpia la cámara, mejora iluminación y evita reflejos. Si el código está dañado,
+            captura el número manualmente.
+          </div>
+        </section>
+
+        <section class="card" id="reportes">
+          <div class="sectionTitle">
+            <div class="icon">📈</div>
+            <h2>Reportes</h2>
+          </div>
+          <ul>
+            <li><b>Ventas del día</b>: tickets y total vendido.</li>
+            <li><b>Top productos</b>: productos con más movimiento.</li>
+            <li><b>Ventas por empleado</b>: desempeño por cajero.</li>
+            <li><b>Tendencia</b>: comparación mensual.</li>
+          </ul>
+          <div class="callout">
+            <span class="pill">Tip</span>
+            Usa “Stock mínimo” para surtir antes de quedarte sin producto.
+          </div>
+        </section>
+
+        <section class="card" id="cajeros">
+          <div class="sectionTitle">
+            <div class="icon">👥</div>
+            <h2>Administración de cajeros</h2>
+          </div>
+          <p>Alta rápida y control de acceso.</p>
+          <ul>
+            <li><b>Crear vendedor</b>: usuario + PIN (recomendado) o contraseña.</li>
+            <li><b>Dar de baja / Reactivar</b>: el historial se conserva.</li>
+            <li><b>Cambiar PIN / Contraseña</b>: sin perder ventas anteriores.</li>
+          </ul>
+          <div class="callout">
+            <span class="pill warning">Recomendación</span>
+            Para operación rápida, usar PIN de 4 dígitos.
+          </div>
+        </section>
+        </main>
+      </div>
+
+      <section class="card" style="margin-top: 14px" id="faq">
+        <div class="sectionTitle">
+          <div class="icon">❓</div>
+          <h2>Preguntas frecuentes</h2>
+        </div>
+        <h3>¿Mis datos se pierden si no hay internet?</h3>
+        <p>No. La app funciona offline y guarda todo localmente.</p>
+
+        <h3>¿Qué pasa si desinstalo la app?</h3>
+        <p>
+          Al desinstalar se borra la base local del dispositivo. Recomendación: no desinstalar sin
+          respaldo.
+        </p>
+
+        <h3>¿Cómo actualizo la app sin perder datos?</h3>
+        <p>
+          Instala la actualización encima (mismo paquete y firma). No desinstales antes de instalar
+          la nueva versión.
+        </p>
+      </section>
+
+      <div class="footer">
+        Documento para cliente final · PVT (POS) · Generado para operación en tienda
+      </div>
+    </div>
+  </body>
+</html>
+
