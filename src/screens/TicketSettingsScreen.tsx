@@ -3,6 +3,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useCallback, useMemo, useState } from 'react';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { AppIcon } from '../components/AppIcon';
+import { BluetoothDevicePicker } from '../components/BluetoothDevicePicker';
 import { Button } from '../components/Button';
 import { Screen } from '../components/Screen';
 import { TextField } from '../components/TextField';
@@ -11,6 +12,12 @@ import {
   saveTicketSettings,
   type PrinterMode,
 } from '../database/settingsRepo';
+import {
+  connectPrinter,
+  disconnectPrinter,
+  printTestTicketBt,
+  type BtDevice,
+} from '../printing/bluetoothPrinter';
 import { buildTestTicketText } from '../printing/ticketPreview';
 import type { AdminStackParamList } from '../navigation/types';
 import { colors, radii, spacing, typography } from '../theme/theme';
@@ -23,7 +30,6 @@ type Form = {
   storePhone: string;
   farewellMessage: string;
   printerMode: PrinterMode;
-  // Bluetooth (solo guardamos; la selección real se implementa después)
   btDeviceName: string;
   btDeviceId: string;
   // Network
@@ -34,6 +40,8 @@ type Form = {
 export function TicketSettingsScreen(_props: Props) {
   const [form, setForm] = useState<Form>(() => toForm(getTicketSettings()));
   const [submitting, setSubmitting] = useState(false);
+  const [pickerVisible, setPickerVisible] = useState(false);
+  const [printing, setPrinting] = useState(false);
 
   const refresh = useCallback(() => {
     setForm(toForm(getTicketSettings()));
@@ -86,25 +94,54 @@ export function TicketSettingsScreen(_props: Props) {
     }
   };
 
-  const handleTest = () => {
-    const current = getTicketSettings();
-    const preview = buildTestTicketText(current);
+  const handleDeviceSelected = (device: BtDevice) => {
+    setForm(prev => ({
+      ...prev,
+      btDeviceName: device.name,
+      btDeviceId: device.address,
+    }));
+  };
 
+  const handleTest = async () => {
+    const current = getTicketSettings();
+
+    if (current.printerMode === 'bluetooth') {
+      const address = form.btDeviceId.trim() || current.btDeviceId;
+      if (!address) {
+        Alert.alert(
+          'Sin impresora',
+          'Primero selecciona una impresora Bluetooth.',
+        );
+        return;
+      }
+      setPrinting(true);
+      try {
+        await connectPrinter(address);
+        await printTestTicketBt(current);
+        await disconnectPrinter();
+        Alert.alert('Ticket impreso', 'Prueba enviada correctamente.');
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : 'Error al imprimir.';
+        Alert.alert(
+          'No se pudo imprimir',
+          `${msg}\n\nVerifica que la impresora esté encendida y emparejada.`,
+        );
+      } finally {
+        setPrinting(false);
+      }
+      return;
+    }
+
+    // Modos sin impresora real: mostrar vista previa en texto
+    const preview = buildTestTicketText(current);
     if (current.printerMode === 'network') {
       Alert.alert(
-        'Ticket de prueba (vista previa)',
-        `${preview}\n\nImpresora en red: ${current.netHost ?? '—'}:${current.netPort ?? '—'}\n\nNota: la impresión real por red/Bluetooth se activa en la siguiente fase (requiere módulo nativo).`,
+        'Vista previa del ticket',
+        `${preview}\n\nImpresora en red: ${current.netHost ?? '—'}:${current.netPort ?? '—'}`,
       );
       return;
     }
-    if (current.printerMode === 'bluetooth') {
-      Alert.alert(
-        'Ticket de prueba (vista previa)',
-        `${preview}\n\nImpresora Bluetooth: ${current.btDeviceName ?? '—'}\n\nNota: la impresión real por Bluetooth se activa en la siguiente fase (requiere permisos y módulo nativo).`,
-      );
-      return;
-    }
-    Alert.alert('Ticket de prueba (vista previa)', preview);
+    Alert.alert('Vista previa del ticket', preview);
   };
 
   return (
@@ -148,10 +185,9 @@ export function TicketSettingsScreen(_props: Props) {
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Impresora (preparado)</Text>
+        <Text style={styles.sectionTitle}>Impresora</Text>
         <Text style={styles.sectionHint}>
-          Puedes dejar guardada la configuración. La conexión/impresión se
-          implementa en una fase posterior.
+          Selecciona el modo y configura tu impresora térmica Bluetooth o en red.
         </Text>
 
         <View style={styles.segment}>
@@ -179,25 +215,44 @@ export function TicketSettingsScreen(_props: Props) {
         {form.printerMode === 'bluetooth' ? (
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Bluetooth</Text>
-            <Text style={styles.cardHint}>
-              En el futuro aquí mostraremos un botón para buscar/seleccionar la
-              impresora. Por ahora puedes guardar el nombre/ID manualmente.
-            </Text>
-            <TextField
-              label="Nombre del dispositivo (opcional)"
-              value={form.btDeviceName}
-              onChangeText={t => setForm(prev => ({ ...prev, btDeviceName: t }))}
-              placeholder="Ej. Printer-58"
-              leftIcon={<AppIcon name="bluetooth" />}
-            />
-            <TextField
-              label="ID / MAC (opcional)"
-              value={form.btDeviceId}
-              onChangeText={t => setForm(prev => ({ ...prev, btDeviceId: t }))}
-              placeholder="Ej. AA:BB:CC:DD:EE:FF"
-              autoCapitalize="characters"
-              leftIcon={<AppIcon name="identifier" />}
-            />
+
+            {form.btDeviceId ? (
+              <View style={styles.deviceSelected}>
+                <AppIcon name="printer-wireless" size={22} color={colors.success} />
+                <View style={styles.deviceSelectedText}>
+                  <Text style={styles.deviceSelectedName} numberOfLines={1}>
+                    {form.btDeviceName || form.btDeviceId}
+                  </Text>
+                  <Text style={styles.deviceSelectedAddress}>{form.btDeviceId}</Text>
+                </View>
+                <Pressable
+                  onPress={() =>
+                    setForm(prev => ({ ...prev, btDeviceName: '', btDeviceId: '' }))
+                  }
+                  hitSlop={8}
+                  accessibilityRole="button"
+                  accessibilityLabel="Quitar impresora">
+                  <AppIcon name="close-circle-outline" size={20} color={colors.textSecondary} />
+                </Pressable>
+              </View>
+            ) : (
+              <Text style={styles.cardHint}>
+                Ninguna impresora seleccionada. Toca el botón para buscar dispositivos cercanos.
+              </Text>
+            )}
+
+            <Pressable
+              onPress={() => setPickerVisible(true)}
+              style={({ pressed }) => [
+                styles.selectBtn,
+                pressed && { opacity: 0.7 },
+              ]}
+              accessibilityRole="button">
+              <AppIcon name="bluetooth-connect" size={20} color={colors.primary} />
+              <Text style={styles.selectBtnLabel}>
+                {form.btDeviceId ? 'Cambiar impresora' : 'Seleccionar impresora'}
+              </Text>
+            </Pressable>
           </View>
         ) : null}
 
@@ -240,10 +295,27 @@ export function TicketSettingsScreen(_props: Props) {
       />
 
       <Button
-        label="Ver ticket de prueba"
+        label={
+          form.printerMode === 'bluetooth'
+            ? 'Imprimir ticket de prueba'
+            : 'Ver ticket de prueba'
+        }
         variant="secondary"
         size="medium"
         onPress={handleTest}
+        loading={printing}
+        leftIcon={
+          form.printerMode === 'bluetooth' ? (
+            <AppIcon name="printer" size={20} color={colors.textPrimary} />
+          ) : undefined
+        }
+      />
+
+      <BluetoothDevicePicker
+        visible={pickerVisible}
+        currentAddress={form.btDeviceId || null}
+        onSelect={handleDeviceSelected}
+        onDismiss={() => setPickerVisible(false)}
       />
     </Screen>
   );
@@ -368,6 +440,42 @@ const styles = StyleSheet.create({
   cardHint: {
     ...typography.caption,
     color: colors.textSecondary,
+  },
+  deviceSelected: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    backgroundColor: colors.surface,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    borderColor: colors.success,
+    padding: spacing.md,
+  },
+  deviceSelectedText: {
+    flex: 1,
+  },
+  deviceSelectedName: {
+    ...typography.bodyStrong,
+    color: colors.textPrimary,
+  },
+  deviceSelectedAddress: {
+    ...typography.caption,
+    color: colors.textSecondary,
+  },
+  selectBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    minHeight: 52,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    borderColor: colors.primary,
+    paddingHorizontal: spacing.lg,
+  },
+  selectBtnLabel: {
+    ...typography.bodyStrong,
+    color: colors.primary,
   },
 });
 

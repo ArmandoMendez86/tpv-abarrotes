@@ -2,6 +2,8 @@ import { useFocusEffect } from '@react-navigation/native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useCallback, useState } from 'react';
 import {
+  ActivityIndicator,
+  Alert,
   FlatList,
   Pressable,
   StyleSheet,
@@ -16,9 +18,15 @@ import {
   listSalesOfDayWithSeller,
   type SaleWithSellerRow,
 } from '../database/salesRepo';
+import { getTicketSettings } from '../database/settingsRepo';
 import type { UserRow } from '../database/models';
 import { listVendors } from '../database/usersRepo';
 import type { AdminStackParamList } from '../navigation/types';
+import {
+  connectPrinter,
+  disconnectPrinter,
+  printSaleTicket,
+} from '../printing/bluetoothPrinter';
 import { colors, radii, spacing, typography } from '../theme/theme';
 import { formatCurrency } from '../utils/format';
 
@@ -42,6 +50,7 @@ export function DailySalesScreen(_props: Props) {
   const [items, setItems] = useState<Record<number, SaleItemDetailRow[]>>({});
   const [vendors, setVendors] = useState<UserRow[]>([]);
   const [selectedVendorId, setSelectedVendorId] = useState<number | null>(null);
+  const [printingId, setPrintingId] = useState<number | null>(null);
 
   const refresh = useCallback(() => {
     setVendors(listVendors({ onlyActive: true }));
@@ -66,6 +75,48 @@ export function DailySalesScreen(_props: Props) {
       setItems(prev => ({ ...prev, [saleId]: getSaleItems(saleId) }));
     }
     setExpandedId(saleId);
+  };
+
+  const handleReprint = async (sale: SaleWithSellerRow) => {
+    const settings = getTicketSettings();
+    if (settings.printerMode !== 'bluetooth' || !settings.btDeviceId) {
+      Alert.alert('Sin impresora', 'Configura una impresora Bluetooth en Ajustes de ticket.');
+      return;
+    }
+
+    // Cargar renglones si aún no están en memoria
+    const saleItems = items[sale.id] ?? getSaleItems(sale.id);
+    if (!items[sale.id]) {
+      setItems(prev => ({ ...prev, [sale.id]: saleItems }));
+    }
+
+    const lines = saleItems.map(d => ({
+      productId: d.producto_id,
+      barcode: null as string | null,
+      name: d.product_name,
+      unitPrice: d.unit_price,
+      quantity: d.quantity,
+    }));
+
+    setPrintingId(sale.id);
+    try {
+      await connectPrinter(settings.btDeviceId);
+      await printSaleTicket({
+        saleId: sale.id,
+        lines,
+        total: sale.total,
+        cashReceived: sale.cash_received,
+        changeGiven: sale.change_given,
+        settings,
+      });
+      await disconnectPrinter();
+      Alert.alert('Ticket impreso', `Ticket #${sale.id} enviado a la impresora.`);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Error al imprimir.';
+      Alert.alert('No se pudo imprimir', msg);
+    } finally {
+      setPrintingId(null);
+    }
   };
 
   return (
@@ -116,6 +167,8 @@ export function DailySalesScreen(_props: Props) {
             expanded={expandedId === item.id}
             details={items[item.id] ?? []}
             onToggle={() => toggleExpand(item.id)}
+            onReprint={() => handleReprint(item)}
+            printing={printingId === item.id}
           />
         )}
       />
@@ -128,11 +181,15 @@ function SaleCard({
   expanded,
   details,
   onToggle,
+  onReprint,
+  printing,
 }: {
   sale: SaleWithSellerRow;
   expanded: boolean;
   details: SaleItemDetailRow[];
   onToggle: () => void;
+  onReprint: () => void;
+  printing: boolean;
 }) {
   return (
     <View style={styles.card}>
@@ -147,6 +204,7 @@ function SaleCard({
           <Text style={styles.method}>{sale.payment_method}</Text>
         </View>
       </Pressable>
+
       {expanded ? (
         <View style={styles.detailsBlock}>
           {details.length === 0 ? (
@@ -164,6 +222,7 @@ function SaleCard({
               </View>
             ))
           )}
+
           {sale.cash_received != null ? (
             <View style={styles.cashLine}>
               <Text style={styles.cashLabel}>Efectivo recibido</Text>
@@ -180,6 +239,24 @@ function SaleCard({
               </Text>
             </View>
           ) : null}
+
+          {/* Botón reimprimir */}
+          <Pressable
+            onPress={onReprint}
+            disabled={printing}
+            style={({ pressed }) => [
+              styles.reprintBtn,
+              pressed && { opacity: 0.7 },
+              printing && { opacity: 0.5 },
+            ]}
+            accessibilityRole="button">
+            {printing ? (
+              <ActivityIndicator size="small" color={colors.primary} />
+            ) : null}
+            <Text style={styles.reprintLabel}>
+              {printing ? 'Imprimiendo…' : 'Reimprimir ticket'}
+            </Text>
+          </Pressable>
         </View>
       ) : null}
     </View>
@@ -382,6 +459,21 @@ const styles = StyleSheet.create({
   cashValue: {
     ...typography.body,
     color: colors.textPrimary,
+  },
+  reprintBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    marginTop: spacing.sm,
+    paddingVertical: spacing.md,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    borderColor: colors.primary,
+  },
+  reprintLabel: {
+    ...typography.bodyStrong,
+    color: colors.primary,
   },
   empty: {
     alignItems: 'center',

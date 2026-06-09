@@ -1,14 +1,19 @@
 /**
  * Tipos de los stacks de navegación.
  *
- * La app divide la navegación según el estado de la sesión:
- *  - AuthStack    : sin sesión (Login).
- *  - AdminStack   : sesión con rol 'Administrador'.
- *  - SellerStack  : sesión con rol 'Vendedor'.
+ * La app divide la navegación según el estado de la sesión y la licencia:
+ *  - ActivationStack : primera instalación, sin licencia activada.
+ *  - AuthStack       : licencia válida, sin sesión (Login).
+ *  - AdminStack      : sesión con rol 'Administrador'.
+ *  - SellerStack     : sesión con rol 'Vendedor'.
  *
- * Mantener stacks separados por rol evita que un Vendedor llegue por error a
+ * Mantener stacks separados evita que un Vendedor llegue por error a
  * pantallas administrativas, incluso por bugs de navegación.
  */
+
+export type ActivationStackParamList = {
+  LicenseActivation: undefined;
+};
 
 export type AuthStackParamList = {
   Login: undefined;
