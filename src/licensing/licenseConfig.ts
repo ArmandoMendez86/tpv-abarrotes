@@ -8,13 +8,13 @@
  */
 export const LICENSE_CONFIG = {
   /** URL base del backend ecommer (sin barra al final). */
-  BASE_URL: 'http://localhost:8000',
+  BASE_URL: 'https://sistemasdecobro.com.mx',
 
   /**
    * Debe coincidir EXACTAMENTE con la variable LICENSE_API_KEY
    * del archivo .env del ecommer.
    */
-  SERVER_API_KEY: 'ecommer-local-api-key-change-in-production',
+  SERVER_API_KEY: 'Kysx3CB57RWZYCiAKkZjw8hPh7TsgHf1swV2VQkszcCPE7xmy90xHRodlQuChVGt',
 
   /** SKU del producto "POS Abarrotes Pro" en el catálogo del ecommer. */
   PRODUCT_SKU: 'POS-ABR-001',
